@@ -38,10 +38,23 @@ def GameThread():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption('Test')
 
-    # Create game objects
+    #background image
+    background_image = pygame.image.load("CCN/templates/background.jpg")  # Replace with your background image path
+    background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))  # Scale to screen size
+
+    #Apples and basket images
+    apple_image = pygame.image.load("CCN/templates/apple.png")  
+    apple_image = pygame.transform.scale(apple_image, (40, 40)) 
+    basket_image = pygame.image.load("CCN/templates/basket.png")
+    basket_image = pygame.transform.scale(basket_image, (60, 60))
+
+    # score board
+    font = pygame.font.Font(None, 36) 
+
+    # game objects
     boarders = pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
     border_color = (0, 0, 5) 
-    cupRect = pygame.Rect(0, 0, 30, 30)
+    cupRect = pygame.Rect(0, 0, 60, 60)
     balls = []
     ball_timers = []  
 
@@ -54,7 +67,7 @@ def GameThread():
         current_time = pygame.time.get_ticks()
         for i in range(len(ball_timers)):
             if ball_timers[i] <= current_time:
-                ball = pygame.Rect(random.randint(0, SCREEN_WIDTH - 15), -20, 20, 20)
+                ball = pygame.Rect(random.randint(0, SCREEN_WIDTH - 15), -20, 40, 40)
                 balls.append(ball)
                 ball_timers[i] = current_time + random.randint(1000, 5000) 
             
@@ -64,22 +77,11 @@ def GameThread():
                 pygame.quit()
                 sys.exit()
 
-        screen.fill(BACKGROUND)
+        screen.blit(background_image, (0, 0))
         cupRect.center = (posx, posy)
-
-        # prevent cup from going out of bounds
-        if posx < 15:  
-            posx = 15
-        if posx > SCREEN_WIDTH - 15: 
-            posx = SCREEN_WIDTH - 15
-        if posy < 15:  
-            posy = 15
-        if posy > SCREEN_HEIGHT - 15: 
-            posy = SCREEN_HEIGHT - 15
-
-        # Draw cup and borders
-        pygame.draw.rect(screen, SHAPE_COLOR, cupRect)
+        screen.blit(basket_image, (cupRect.x, cupRect.y))
         pygame.draw.rect(screen, border_color, boarders, 6, 1)
+
 
         # Update and draw balls
         delta_time = fps.tick(FPS) / 1000.0
@@ -93,8 +95,11 @@ def GameThread():
             if ball.y > SCREEN_HEIGHT and not collision:  
                 gameOver = True
                 balls.remove(ball)  # Remove ball on collision
-            pygame.draw.rect(screen, DROP_COLOR, ball)
+            screen.blit(apple_image, (ball.x, ball.y))
         
+        score_text = font.render(f"Score: {score}", True, (0, 0, 0)) 
+        screen.blit(score_text, (10, 10)) 
+
         # Increase difficulty
         if score != 0 and score % goal == 0:
             goal += 10

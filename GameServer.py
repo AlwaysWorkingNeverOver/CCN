@@ -26,19 +26,19 @@ SHAPE_COLOR = (0, 51, 204)
 DROP_COLOR = (255, 0, 0)
 
 def GameThread():
-    global posx, posy, gameOver, numBAlls, score, speed, goal, cupSpeed, minOffset, maxOffset
+    global posx, posy, gameOver, numBalls, score, speed, goal, cupSpeed, minOffset, maxOffset
 
     pygame.init()
     fps = pygame.time.Clock()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption('Test')
 
-    background_image = pygame.image.load("CCN/templates/background.jpg")
+    background_image = pygame.image.load("templates/background.jpg")
     background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
-    apple_image = pygame.image.load("CNN/templates/apple.png")
+    apple_image = pygame.image.load("templates/apple.png")
     apple_image = pygame.transform.scale(apple_image, (40, 40))
-    basket_image = pygame.image.load("CNN/templates/basket.png")
+    basket_image = pygame.image.load("templates/basket.png")
     basket_image = pygame.transform.scale(basket_image, (60, 60))
 
     font = pygame.font.Font(None, 36)
@@ -49,7 +49,7 @@ def GameThread():
     balls = []
     ball_timers = []
 
-    for _ in range(numBalls):
+    for ball in range(numBalls):
         ball_timers.append(pygame.time.get_ticks() + random.randint(500, 2000))
 
     while not gameOver:
@@ -61,7 +61,7 @@ def GameThread():
                 ball_timers[i] = current_time + random.randint(1000, 5000)
 
         for event in pygame.event.get():
-            if event.type == pygame.QUIT
+            if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
@@ -102,7 +102,7 @@ def GameThread():
 
 
 def ServerThread():
-    global psoy, posx, cupSpeed, gameOver
+    global posy, posx, cupSpeed, gameOver, SCREEN_HEIGHT, SCREEN_WIDTH
 
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("localhost", 80))
@@ -120,7 +120,8 @@ def ServerThread():
     print("Connection from: " + str(address))
 
     while not gameOver:
-        data = conn.rect(1024).decode()
+        #data = conn.rect(1024).decode()
+        data = conn.recv(1024).decode()
         if not data:
             break
 
@@ -145,6 +146,6 @@ def ServerThread():
     conn.close()
 
 t1 = threading.Thread(target=GameThread, args=[])
-t2 = threading.Thread(target=ServerThread, arg=[])
+t2 = threading.Thread(target=ServerThread, args=[])
 t1.start()
 t2.start()

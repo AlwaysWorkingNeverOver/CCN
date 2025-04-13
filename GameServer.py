@@ -61,7 +61,7 @@ def GameThread():
                 ball_timers[i] = current_time + random.randint(1000, 5000)
 
         for event in pygame.event.get():
-            if event.type == pygame.QUIT
+            if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 

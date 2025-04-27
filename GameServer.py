@@ -40,7 +40,6 @@ def Menu(screen):
 
     clock = pygame.time.Clock()
     while not game_started:
-        print("Alex")
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()

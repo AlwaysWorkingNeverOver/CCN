@@ -8,7 +8,7 @@ import time
 name = "test"
 posx = 300
 posy = 200
-speed = 1
+speed = 0.6
 gameOver = False
 numBalls = 1
 score = 0
@@ -17,6 +17,7 @@ goal = 5
 minOffset = 0
 maxOffset = 0
 game_started = False
+end = False
 
 SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 400
@@ -39,6 +40,7 @@ def Menu(screen):
 
     clock = pygame.time.Clock()
     while not game_started:
+        print("Alex")
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -73,27 +75,30 @@ def Menu(screen):
     print("Menu exiting")
 
 def GameThread(screen):
-    global posx, posy, gameOver, numBalls, score, speed, goal, cupSpeed, minOffset, maxOffset
-    print("GameThread started")
+    global posx, posy, gameOver, numBalls, score, speed, goal, cupSpeed, minOffset, maxOffset,end,game_started
+    #print("GameThread started")
     pygame.display.set_caption('Test')
 
     try:
         screen.fill((0, 0, 255))
-        print("Filled screen blue")
+        #print("Filled screen blue")
         pygame.display.flip()
         time.sleep(1)
 
         background_image = pygame.image.load("templates/background.jpg")
         background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
-        print("Loaded background image")
+       # print("Loaded background image")
 
         apple_image = pygame.image.load("templates/apple.png")
         apple_image = pygame.transform.scale(apple_image, (40, 40))
-        print("Loaded apple image")
+        #print("Loaded apple image")
 
         basket_image = pygame.image.load("templates/basket.png")
         basket_image = pygame.transform.scale(basket_image, (60, 60))
-        print("Loaded basket image")
+        #print("Loaded basket image")
+
+        bomb_image = pygame.image.load("templates/bomb.png")  
+        bomb_image = pygame.transform.scale(bomb_image, (40, 40))
 
         font = pygame.font.Font(None, 36)
         boarders = pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -110,42 +115,80 @@ def GameThread(screen):
             current_time = pygame.time.get_ticks()
             for i in range(len(ball_timers)):
                 if ball_timers[i] <= current_time:
-                    ball = pygame.Rect(random.randint(0, SCREEN_WIDTH - 15), -20, 40, 40)
-                    balls.append(ball)
+                    is_bomb = random.random() < 0.2  # 20 percent chance to spawn a bomb
+                    obj = {
+                        "rect": pygame.Rect(random.randint(0, SCREEN_WIDTH - 15), -20, 40, 40),
+                        "type": "bomb" if is_bomb else "apple"
+                    }
+                    balls.append(obj)
                     ball_timers[i] = current_time + random.randint(1000, 5000)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    end = True
                     pygame.quit()
                     sys.exit()
 
             screen.blit(background_image, (0, 0))
-            print("Blitted background")
+            #print("Blitted background")
             cupRect.center = (posx, posy)
             screen.blit(basket_image, (cupRect.x, cupRect.y))
-            print("Blitted basket")
+            #print("Blitted basket")
             pygame.draw.rect(screen, border_color, boarders, 6, 1)
 
             delta_time = fps.tick(FPS) / 1000.0
             for ball in balls:
-                ball.y += speed * delta_time * 60
-                collision = cupRect.colliderect(ball)
+                ball['rect'].y += speed * delta_time * 60
+                collision = cupRect.colliderect(ball['rect'])
                 if collision:
-                    score += 1
+                    if obj["type"] == "apple":
+                        score += 1
+                    elif obj["type"] == "bomb":
+                        gameOver = True  # End the game if a bomb hits the basket
                     balls.remove(ball)
-                if ball.y > SCREEN_HEIGHT and not collision:
+                if ball['rect'].y > SCREEN_HEIGHT and not collision:
                     gameOver = True
                     balls.remove(ball)
-                screen.blit(apple_image, (ball.x, ball.y))
-            print("Blitted apples")
+                    
+                if ball["type"] == "apple":
+                    screen.blit(apple_image, (ball['rect'].x, ball['rect'].y))
+                elif ball["type"] == "bomb":
+                    screen.blit(bomb_image, (ball['rect'].x, ball['rect'].y)) 
+                #print("Blitted apples")
 
             score_text = font.render(f"Score: {score}", True, (0, 0, 0))
             screen.blit(score_text, (10, 10))
-            print("Blitted score")
+
+            # Increase difficulty
+            if score != 0 and score % goal == 0:
+                goal += 20
+                numBalls += 1
+                minOffset += 2000
+                maxOffset += 2000
+                for _ in range(numBalls):
+                    print(numBalls)
+                    ball_timers.append(pygame.time.get_ticks() + random.randint(1000 + minOffset, 5000 + maxOffset))
+
+            if score != 0 and score % goal == 0:
+                speed += 0.001
+                cupSpeed += 1
+
+            #print("Blitted score")
 
             pygame.event.pump()
             pygame.display.flip()
-            print("Updated display")
+            #print("Updated display")
+
+        # Reset back to initial game states
+        gameOver = False
+        numBalls = 1
+        score = 0
+        speed = 0.6
+        goal = 5
+        minOffset = 0
+        maxOffset = 0
+        game_started = False 
+
     except Exception as e:
         print(f"Error in GameThread: {e}")
         pygame.quit()
@@ -177,13 +220,13 @@ def ServerThread():
                 break
             print("from connected user: " + str(data))
             if data == 'w':
-                posy -= 10
+                posy -= 30
             if data == 's':
-                posy += 10
+                posy += 30
             if data == 'a':
-                posx -= 10
+                posx -= 30
             if data == 'd':
-                posx += 10
+                posx += 30
         conn.close()
     except socket.error as e:
         print(f"Socket error: {e}")
@@ -196,10 +239,13 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     t2 = threading.Thread(target=ServerThread, args=[])
     t2.start()
-    Menu(screen)  
-    print(f"Menu finished, game_started: {game_started}")
-    if game_started:
-        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        GameThread(screen) 
+
+    while not end:
+        if game_started:
+            screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+            GameThread(screen)
+        else:
+            Menu(screen)  
+            print(f"Menu finished, game_started: {game_started}")
     t2.join()
     pygame.quit()

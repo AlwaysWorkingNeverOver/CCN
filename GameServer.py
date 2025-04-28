@@ -114,7 +114,7 @@ def GameThread(screen):
             current_time = pygame.time.get_ticks()
             for i in range(len(ball_timers)):
                 if ball_timers[i] <= current_time:
-                    is_bomb = random.random() < 0.2  # 20 percent chance to spawn a bomb
+                    is_bomb = random.random() < 0.20  # 20 percent chance to spawn a bomb
                     obj = {
                         "rect": pygame.Rect(random.randint(0, SCREEN_WIDTH - 15), -20, 40, 40),
                         "type": "bomb" if is_bomb else "apple"
@@ -140,12 +140,12 @@ def GameThread(screen):
                 ball['rect'].y += speed * delta_time * 60
                 collision = cupRect.colliderect(ball['rect'])
                 if collision:
-                    if obj["type"] == "apple":
+                    if ball["type"] == "apple":
                         score += 1
-                    elif obj["type"] == "bomb":
+                    elif ball["type"] == "bomb":
                         gameOver = True  # End the game if a bomb hits the basket
                     balls.remove(ball)
-                if ball['rect'].y > SCREEN_HEIGHT and not collision:
+                if (ball['rect'].y > SCREEN_HEIGHT and not collision) and ball["type"] == "apple":
                     gameOver = True
                     balls.remove(ball)
                     
@@ -197,12 +197,12 @@ def ServerThread():
     global posy, posx
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("localhost", 5000))
+        s.connect(("10.22.34.25", 5000))
         host = s.getsockname()[0]
         s.close()
     except socket.error as e:
         print(f"Error getting host: {e}")
-        host = "localhost"
+        host = "10.22.34.25"
     port = 5000
     print(f"Binding to {host}:{port}")
 
